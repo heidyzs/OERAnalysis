@@ -75,7 +75,9 @@ ggplot(data = oers1_pect, mapping = aes(x = reorder(branch, -count), y = count, 
   geom_bar(stat = "identity")+
   labs(y = "Number of OERs", x = "Branch", fill = "Block Check Rating")+
   theme_minimal()+
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
 
 ```
 
@@ -103,7 +105,9 @@ ggplot(data = oers1c,mapping = aes(x = year, y= pct,fill = srLabel))+
   labs(fill = "")+
   #ggtitle("Distribution of OERS in 2017") + 
   scale_y_continuous(labels=percent) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick")) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick")) +
   coord_flip()
 ```
 
@@ -128,7 +132,9 @@ ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
   labs(fill = "")+
   #ggtitle("Distribution of OERS for Braches with Greater than 100 OERS in 2017") +
   scale_y_continuous(labels=percent)+
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
 
 ```
 
@@ -140,7 +146,8 @@ ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
 
 #SENIOR NARRATIVES
 tidy_oer_senior = oers1 %>% unnest_tokens(srNarrativeWords, srNarrative) %>% 
-  anti_join(stop_words, by = c("srNarrativeWords" ="word")) %>% count(branch, srNarrativeWords, sort = TRUE)
+  anti_join(stop_words, by = c("srNarrativeWords" ="word")) %>% 
+  count(branch, srNarrativeWords, sort = TRUE)
 tidy_oer_senior <- tidy_oer_senior[!grepl(".*xx.*", tidy_oer_senior$srNarrativeWords),]
 
 
@@ -355,24 +362,7 @@ unweighted_log_odds_bigrams_ordered_combat <-
 unweighted_log_odds_bigrams_ordered_combat$srLabel <-  factor(unweighted_log_odds_bigrams_ordered_combat$srLabel,
                                               levels = c("Most Qualified", "Highly Qualified"))
 ```
-```{r, fig.width = 12}
-unweighted_log_odds_bigrams_ordered_plot_combat <- 
-  unweighted_log_odds_bigrams_ordered_combat %>% 
-  ggplot(aes(order, logoddsratio, fill = srLabel)) +
-  geom_bar(stat = 'identity', show.legend = FALSE) +
-  labs(x = NULL, y = "log_odds") +
-  facet_wrap(~srLabel, ncol = 2, scales = "free") +
-  theme_hc() +
-  coord_flip()+
-  scale_colour_hc()+
-  scale_x_continuous(
-    breaks = unweighted_log_odds_bigrams_ordered_combat$order,
-    labels = paste0(unweighted_log_odds_bigrams_ordered_combat$bigram),
-    expand = c(0,0)
-  ) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
-  ggtitle("Unweighted Log-Odds Ratio Combat Arms for Bigrams")
-```
+
 ```{r, include = FALSE}
 #Logistics
 df1_bigram_logistics <- bigram_filter %>% select(branch, word1, word2, srLabel) %>% 
@@ -415,7 +405,25 @@ unweighted_log_odds_bigrams_ordered_logistics$srLabel <-  factor(unweighted_log_
 ```
 
 ```{r, fig.width = 12}
-#Final Plot
+
+unweighted_log_odds_bigrams_ordered_plot_combat <- 
+  unweighted_log_odds_bigrams_ordered_combat %>% 
+  ggplot(aes(order, logoddsratio, fill = srLabel)) +
+  geom_bar(stat = 'identity', show.legend = FALSE) +
+  labs(x = NULL, y = "log_odds") +
+  facet_wrap(~srLabel, ncol = 2, scales = "free") +
+  theme_hc() +
+  coord_flip()+
+  scale_colour_hc()+
+  scale_x_continuous(
+    breaks = unweighted_log_odds_bigrams_ordered_combat$order,
+    labels = paste0(unweighted_log_odds_bigrams_ordered_combat$bigram),
+    expand = c(0,0)
+  ) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod")) +
+  ggtitle("Unweighted Log-Odds Ratio Combat Arms for Bigrams")
+
 unweighted_log_odds_bigrams_ordered_plot_logistics <- 
   unweighted_log_odds_bigrams_ordered_logistics %>% 
   ggplot(aes(order, logoddsratio, fill = srLabel)) +
@@ -430,10 +438,11 @@ unweighted_log_odds_bigrams_ordered_plot_logistics <-
     labels = paste0(unweighted_log_odds_bigrams_ordered_logistics$bigram),
     expand = c(0,0)
   ) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod")) +
   ggtitle("Unweighted Log-Odds Ratio Logistics for Bigrams")
 ```
-```{r, fig.width = 12}
+```{r, fig.width = 12, fig.height = 7}
 #Comparison of Plots
 grid.arrange(unweighted_log_odds_bigrams_ordered_plot_combat, unweighted_log_odds_bigrams_ordered_plot_logistics, nrow = 2)
 ```
@@ -509,7 +518,7 @@ log_odds_logistics_hq <- bigram_log_odds_logistics %>% filter(srLabel == "Highly
   theme_hc() +
   ggtitle("Highly Qualified Logistics Branches")
 ```
-```{r, fig.width = 12}
+```{r, fig.width = 12, fig.height = 7}
 #Log Odds Plot
 grid.arrange(log_odds_combat_mq, log_odds_combat_hq, log_odds_logistics_mq, log_odds_logistics_hq,
              ncol = 2)
@@ -664,7 +673,7 @@ logistics_hq_bigram_plot <-
   )+
   ggtitle("Highly Qualified Logistics Branches")
 ```
-```{r, fig.width = 12}
+```{r, fig.width = 12, fig.height = 7}
 grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, ncol = 2)
 ```
 
@@ -683,6 +692,16 @@ bigram_graph_maneuver_mq <- bigram_counts_maneuver %>%
   filter(n > 200) %>% 
   graph_from_data_frame()
 
+bigram_graph_maneuver_hq <- bigram_counts_maneuver %>% 
+  filter(srLabel == "Highly Qualified") %>% 
+  select(bigram, n) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>% 
+  filter(n > 200) %>% 
+  graph_from_data_frame()
+
+
+```
+```{r, fig.width = 12}
 set.seed(300)
 a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
 
@@ -696,16 +715,7 @@ network_graph_maneuver_mq <- ggraph(bigram_graph_maneuver_mq, layout = "fr") +
   theme_void() +
   ggtitle("Most Qualified")
 
-
-bigram_graph_maneuver_hq <- bigram_counts_maneuver %>% 
-  filter(srLabel == "Highly Qualified") %>% 
-  select(bigram, n) %>% 
-  separate(bigram, c("word1", "word2"), sep = " ") %>% 
-  filter(n > 200) %>% 
-  graph_from_data_frame()
-
 set.seed(2019)
-
 network_graph_maneuver_hq <- ggraph(bigram_graph_maneuver_hq, layout = "fr") +
   geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "#009999", 
                  show.legend = FALSE,
@@ -716,8 +726,7 @@ network_graph_maneuver_hq <- ggraph(bigram_graph_maneuver_hq, layout = "fr") +
                   point.padding = unit(0.2, "lines")) +
   theme_void() + 
   ggtitle("Highly Qualified")
-```
-```{r, fig.width = 12}
+
 grid.arrange(network_graph_maneuver_mq, network_graph_maneuver_hq, ncol = 2)
 ```
 
@@ -776,15 +785,6 @@ freq_combat <- freq_combat %>% select(srLabel, srNarrativeWords, freq) %>%
   spread(srLabel, freq) %>% 
   drop_na()
 
-combat_freq_plot <- ggplot(freq_combat, aes(x = freq_combat$"Most Qualified", y = freq_combat$"Highly Qualified")) +
-  geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
-  geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 1, size = 3) +
-  labs(x = "Most Qualified", y = "Highly Qualified") +
-  scale_x_log10(labels = percent_format()) +
-  scale_y_log10(labels = percent_format()) +
-  geom_abline(color = "red") +
-  ggtitle("Combat Arms Frequency Plot")
-
 #Logistics#
 tidy_words_log <- oer_words_by_branch %>% filter(branch %in% logistics) %>% 
   filter(srLabel %in%(c("Most Qualified", "Highly Qualified"))) %>% 
@@ -807,8 +807,23 @@ freq_log <- freq_log %>% select(srLabel, srNarrativeWords, freq) %>%
 
 #freq_log <- freq_log %>% replace_na(list(MQ = 0.00001, HQ = 0.00001))
 
+```
+```{r, fig.width = 12, fig.height = 6}
 
-log_freq_plot <- ggplot(freq_log, aes(x = freq_log$"Most Qualified", y = freq_log$"Highly Qualified")) +
+combat_freq_plot <- ggplot(freq_combat, 
+                           aes(x = freq_combat$"Most Qualified", 
+                               y = freq_combat$"Highly Qualified")) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
+  geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 1, size = 3) +
+  labs(x = "Most Qualified", y = "Highly Qualified") +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  geom_abline(color = "red") +
+  ggtitle("Combat Arms Frequency Plot")
+
+log_freq_plot <- ggplot(freq_log, 
+                        aes(x = freq_log$"Most Qualified", 
+                            y = freq_log$"Highly Qualified")) +
   geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
   geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 0.75, size = 3) +
   labs(x = "Most Qualified", y = "Highly Qualified") +
@@ -816,8 +831,7 @@ log_freq_plot <- ggplot(freq_log, aes(x = freq_log$"Most Qualified", y = freq_lo
   scale_y_log10(labels = percent_format()) +
   geom_abline(color = "red") +
   ggtitle("Logistics Frequency Plot")
-```
-```{r, fig.width = 12, fig.height = 6}
+
 grid.arrange(combat_freq_plot, log_freq_plot, ncol = 2)
 ```
 

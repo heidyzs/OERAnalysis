@@ -14,7 +14,9 @@ ggplot(data = oers1_pect, mapping = aes(x = reorder(branch, -count), y = count, 
   geom_bar(stat = "identity")+
   labs(y = "Number of OERs", x = "Branch", fill = "Block Check Rating")+
   theme_minimal()+
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-3-1.png)
@@ -38,7 +40,9 @@ ggplot(data = oers1c,mapping = aes(x = year, y= pct,fill = srLabel))+
   labs(fill = "")+
   #ggtitle("Distribution of OERS in 2017") + 
   scale_y_continuous(labels=percent) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick")) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick")) +
   coord_flip()
 ```
 
@@ -59,7 +63,9 @@ ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
   labs(fill = "")+
   #ggtitle("Distribution of OERS for Braches with Greater than 100 OERS in 2017") +
   scale_y_continuous(labels=percent)+
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod", 
+                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-7-1.png)
@@ -159,12 +165,10 @@ unweighted_log_odds_bigrams_ordered_plot_combat <-
     labels = paste0(unweighted_log_odds_bigrams_ordered_combat$bigram),
     expand = c(0,0)
   ) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod")) +
   ggtitle("Unweighted Log-Odds Ratio Combat Arms for Bigrams")
-```
 
-``` r
-#Final Plot
 unweighted_log_odds_bigrams_ordered_plot_logistics <- 
   unweighted_log_odds_bigrams_ordered_logistics %>% 
   ggplot(aes(order, logoddsratio, fill = srLabel)) +
@@ -179,7 +183,8 @@ unweighted_log_odds_bigrams_ordered_plot_logistics <-
     labels = paste0(unweighted_log_odds_bigrams_ordered_logistics$bigram),
     expand = c(0,0)
   ) +
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", 
+                             "Highly Qualified"="lightgoldenrod")) +
   ggtitle("Unweighted Log-Odds Ratio Logistics for Bigrams")
 ```
 
@@ -188,7 +193,7 @@ unweighted_log_odds_bigrams_ordered_plot_logistics <-
 grid.arrange(unweighted_log_odds_bigrams_ordered_plot_combat, unweighted_log_odds_bigrams_ordered_plot_logistics, nrow = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 Weighted Log Odds
 -----------------
@@ -199,7 +204,7 @@ grid.arrange(log_odds_combat_mq, log_odds_combat_hq, log_odds_logistics_mq, log_
              ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-20-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 Percentage of Occurrences
 -------------------------
@@ -208,7 +213,7 @@ Percentage of Occurrences
 grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-22-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-21-1.png)
 
 Network Graphs
 ==============
@@ -217,10 +222,35 @@ Network Graph on Bigrams
 ------------------------
 
 ``` r
+set.seed(300)
+a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
+
+network_graph_maneuver_mq <- ggraph(bigram_graph_maneuver_mq, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "#009999", 
+                 show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, "inches")) +
+  geom_node_point(size = 4) +
+  geom_node_text(aes(label = name), repel = TRUE,
+                 point.padding = unit(0.2, "lines")) +
+  theme_void() +
+  ggtitle("Most Qualified")
+
+set.seed(2019)
+network_graph_maneuver_hq <- ggraph(bigram_graph_maneuver_hq, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "#009999", 
+                 show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, "inches")) +
+  #scale_edge_width(range = c(0.1, 2)) +
+  geom_node_point(size = 4) +
+  geom_node_text(aes(label = name), repel = TRUE,
+                  point.padding = unit(0.2, "lines")) +
+  theme_void() + 
+  ggtitle("Highly Qualified")
+
 grid.arrange(network_graph_maneuver_mq, network_graph_maneuver_hq, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-24-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 Network Graph on Bigrams with Clusters
 --------------------------------------
@@ -250,7 +280,7 @@ hq_clusters_maneuver <- plot(bigram_graph_maneuver_hq, layout = layout_with_fr,
                     main = "Highly Qualified Maneuver Branches")
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-25-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 ``` r
 par(mfrow=c(1,1))
@@ -260,7 +290,29 @@ Frequency Plots
 ---------------
 
 ``` r
+combat_freq_plot <- ggplot(freq_combat, 
+                           aes(x = freq_combat$"Most Qualified", 
+                               y = freq_combat$"Highly Qualified")) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
+  geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 1, size = 3) +
+  labs(x = "Most Qualified", y = "Highly Qualified") +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  geom_abline(color = "red") +
+  ggtitle("Combat Arms Frequency Plot")
+
+log_freq_plot <- ggplot(freq_log, 
+                        aes(x = freq_log$"Most Qualified", 
+                            y = freq_log$"Highly Qualified")) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
+  geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 0.75, size = 3) +
+  labs(x = "Most Qualified", y = "Highly Qualified") +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  geom_abline(color = "red") +
+  ggtitle("Logistics Frequency Plot")
+
 grid.arrange(combat_freq_plot, log_freq_plot, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-27-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-26-1.png)
