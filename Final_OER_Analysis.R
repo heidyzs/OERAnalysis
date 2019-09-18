@@ -658,9 +658,10 @@ grid.arrange(network_graph_maneuver_mq, network_graph_maneuver_hq, ncol = 2)
 par(mfrow=c(1, 2))
 clp_mq_maneuver <- cluster_optimal(bigram_graph_maneuver_mq)
 V(bigram_graph_maneuver_mq)$community <- clp_mq_maneuver$membership
+E(bigram_graph_maneuver_mq)$width <- E(bigram_graph_maneuver_mq)$n/300
 
 mq_clusters_maneuver <- plot(bigram_graph_maneuver_mq, layout = layout_with_fr,
-                    edge.width = n/300, 
+                    #edge.width = n/300, 
                     edge.arrow.size = 0.2,
                     vertex.color = V(bigram_graph_maneuver_mq)$community, vertex.size = 10,
                     vertex.frame.color = "gray", vertex.label.color = "black",
