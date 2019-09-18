@@ -7,80 +7,19 @@ output:
     keep_md: TRUE
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(ggthemes)
-library(ggrepel)
-library(gridExtra)
-library(tidytext)
-library(tidylo)
-library(tidyr)
-library(scales)
-library(reshape2)
-library(wordcloud)
-library(tidylo)
-```
+
 
 ## OER Analysis
 
-```{r, include = FALSE}
-oers = readxl::read_xlsx("OER_Narratives.xlsx")
-names(oers)
-summary(oers)
 
-oers$gender = as.factor(oers$gender)
-oers$branch = as.factor(oers$branch)
-oers$raterLabel = as.factor(oers$raterLabel)
-oers$srLabel = as.factor(oers$srLabel)
-
-summary(oers %>% filter(branch == "47"))
-
-oers1 = oers %>% filter(srLabel %in% c("Highly Qualified", "Most Qualified", "Qualified", "Not Qualified")) %>% 
-  filter(raterLabel %in% c("Capable", "Excels","Proficient","Unsatisfactory")) %>% drop_na()
-
-oers1$srLabel = fct_relevel(oers1$srLabel,"Most Qualified","Highly Qualified","Qualified","Not Qualified")
-
-summary(oers1)
-```
 
 ##Total Number of OERs in 2017 by Branch 
 
-```{r, include=FALSE}
-base_branch = c("AD", "AG", "AR", "AV", "CM", "CY", "EN", "FA", "FM", "IN", "MI", "MP", "MS", "OD", "EOD", "QM", "SC", "TC")
-combat_arms = c("IN", "AR", "FA")
-combat_support = c("IN", "QM", "AR","TC", "FA","OD")
-logistics = c("QM", "TC", "OD")
 
-oers1_pect = oers1 %>% 
-  group_by(branch, srLabel) %>% 
-  summarize(count = n()) %>% 
-  arrange(desc(count))
-#filter(branch %in% base_branch)
-
-oers2 = oers1_pect %>% 
-  ungroup() %>% 
-  group_by(branch) %>% 
-  mutate(total = sum(count)) %>% 
-  ungroup() %>% 
-  mutate(final = sum(count)) %>% 
-  mutate(percent = total/final)
-
-addline_format <- function(x,...){
-  gsub(',','\n',x)
-}
-
-#FINAL GRAPH, SORTED BY ORDER#
-ggplot(data = oers1_pect, mapping = aes(x = reorder(branch, -count), y = count, fill = srLabel))+
-  geom_bar(stat = "identity")+
-  labs(y = "Number of OERs", x = "Branch", fill = "Block Check Rating")+
-  theme_minimal()+
-  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
-
-```
 
 ## Distribution of OERs by Senior Rater Label Block Check
-```{r}
+
+```r
 oers1c = oers1 %>% 
   group_by(srLabel) %>% 
   tally() %>% 
@@ -106,8 +45,16 @@ ggplot(data = oers1c,mapping = aes(x = year, y= pct,fill = srLabel))+
   coord_flip()
 ```
 
+```
+## Scale for 'fill' is already present. Adding another scale for 'fill',
+## which will replace the existing scale.
+```
+
+![](OER_Plots_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+
 ##Distribution of OERs Across Base Branches
-```{r}
+
+```r
 oers1a = oers1 %>% 
   group_by(branch, srLabel) %>% 
   tally() %>% 
@@ -127,11 +74,18 @@ ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
   #ggtitle("Distribution of OERS for Braches with Greater than 100 OERS in 2017") +
   scale_y_continuous(labels=percent)+
   scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
-
 ```
 
+```
+## Scale for 'fill' is already present. Adding another scale for 'fill',
+## which will replace the existing scale.
+```
+
+![](OER_Plots_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
 #TF-IDF Plot
-```{r}
+
+```r
 #####TEXT ANALYSIS###############
 
 #SENIOR NARRATIVES
@@ -156,7 +110,13 @@ combined_tf_ordered <-
   ungroup() %>% 
   arrange(branch, tf_idf) %>% 
   mutate(order = row_number())
+```
 
+```
+## Selecting by tf_idf
+```
+
+```r
 combined_tf_ordered$branch <-  factor(combined_tf_ordered$branch, 
                                       levels = c("IN", "AR", "FA", "QM", "TC", "OD"))
 
@@ -178,4 +138,6 @@ tf_idf_word_plot <- ggplot(combined_tf_ordered, aes(order, tf_idf, fill = branch
 
 tf_idf_word_plot
 ```
+
+![](OER_Plots_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
