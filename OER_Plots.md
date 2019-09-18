@@ -136,25 +136,18 @@ word_log_odds_plot <- ggplot(word_log_odds_ordered, aes(order, log_odds, fill = 
     ) +
   ggtitle("Weighted Log-Odds By Branch")
 
-
-#Log Odds vs Tf-Idf Comparison plot  
-grid.arrange(tf_idf_word_plot, word_log_odds_plot, nrow = 2)
+word_log_odds_plot
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-13-1.png)
-
-``` r
-#Weighted Log Odds vs Unweighted Log Odds
-grid.arrange(word_log_odds_plot, unweighted_log_odds_plot)
-```
-
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 Bigrams
 =======
 
 ``` r
-unweighted_log_odds_bigrams_ordered_plot_combat <- ggplot(unweighted_log_odds_bigrams_ordered_combat, aes(order, logoddsratio, fill = srLabel)) +
+unweighted_log_odds_bigrams_ordered_plot_combat <- 
+  unweighted_log_odds_bigrams_ordered_combat %>% 
+  ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
   labs(x = NULL, y = "log_odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
@@ -172,7 +165,9 @@ unweighted_log_odds_bigrams_ordered_plot_combat <- ggplot(unweighted_log_odds_bi
 
 ``` r
 #Final Plot
-unweighted_log_odds_bigrams_ordered_plot_logistics <- ggplot(unweighted_log_odds_bigrams_ordered_logistics, aes(order, logoddsratio, fill = srLabel)) +
+unweighted_log_odds_bigrams_ordered_plot_logistics <- 
+  unweighted_log_odds_bigrams_ordered_logistics %>% 
+  ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
   labs(x = NULL, y = "log_odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
@@ -193,7 +188,7 @@ unweighted_log_odds_bigrams_ordered_plot_logistics <- ggplot(unweighted_log_odds
 grid.arrange(unweighted_log_odds_bigrams_ordered_plot_combat, unweighted_log_odds_bigrams_ordered_plot_logistics, nrow = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-19-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 Weighted Log Odds
 -----------------
@@ -204,7 +199,7 @@ grid.arrange(log_odds_combat_mq, log_odds_combat_hq, log_odds_logistics_mq, log_
              ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-21-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
 Percentage of Occurrences
 -------------------------
@@ -213,7 +208,7 @@ Percentage of Occurrences
 grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 Network Graphs
 ==============
@@ -225,7 +220,7 @@ Network Graph on Bigrams
 grid.arrange(network_graph_maneuver_mq, network_graph_maneuver_hq, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-25-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 Network Graph on Bigrams with Clusters
 --------------------------------------
@@ -255,7 +250,7 @@ hq_clusters_maneuver <- plot(bigram_graph_maneuver_hq, layout = layout_with_fr,
                     main = "Highly Qualified Maneuver Branches")
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-26-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-25-1.png)
 
 ``` r
 par(mfrow=c(1,1))
@@ -268,4 +263,4 @@ Frequency Plots
 grid.arrange(combat_freq_plot, log_freq_plot, ncol = 2)
 ```
 
-![](OER_Plots_files/figure-markdown_github/unnamed-chunk-28-1.png)
+![](OER_Plots_files/figure-markdown_github/unnamed-chunk-27-1.png)

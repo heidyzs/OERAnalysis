@@ -262,7 +262,7 @@ word_log_odds_ordered <-
 word_log_odds_ordered$branch <-  factor(word_log_odds_ordered$branch,
                                       levels = c("IN", "AR", "FA", "QM", "TC", "OD"))
 ```
-```{r, fig.width = 12, fig.height = 10}  
+```{r, fig.width = 12}  
 word_log_odds_plot <- ggplot(word_log_odds_ordered, aes(order, log_odds, fill = branch)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
   labs(x = NULL, y = "log_odds") +
@@ -278,13 +278,8 @@ word_log_odds_plot <- ggplot(word_log_odds_ordered, aes(order, log_odds, fill = 
     ) +
   ggtitle("Weighted Log-Odds By Branch")
 
+word_log_odds_plot
 
-#Log Odds vs Tf-Idf Comparison plot  
-grid.arrange(tf_idf_word_plot, word_log_odds_plot, nrow = 2)
-```
-```{r, fig.width = 12, fig.height = 10}
-#Weighted Log Odds vs Unweighted Log Odds
-grid.arrange(word_log_odds_plot, unweighted_log_odds_plot)
 ```
 
 # Bigrams
@@ -361,7 +356,9 @@ unweighted_log_odds_bigrams_ordered_combat$srLabel <-  factor(unweighted_log_odd
                                               levels = c("Most Qualified", "Highly Qualified"))
 ```
 ```{r, fig.width = 12}
-unweighted_log_odds_bigrams_ordered_plot_combat <- ggplot(unweighted_log_odds_bigrams_ordered_combat, aes(order, logoddsratio, fill = srLabel)) +
+unweighted_log_odds_bigrams_ordered_plot_combat <- 
+  unweighted_log_odds_bigrams_ordered_combat %>% 
+  ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
   labs(x = NULL, y = "log_odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
@@ -419,7 +416,9 @@ unweighted_log_odds_bigrams_ordered_logistics$srLabel <-  factor(unweighted_log_
 
 ```{r, fig.width = 12}
 #Final Plot
-unweighted_log_odds_bigrams_ordered_plot_logistics <- ggplot(unweighted_log_odds_bigrams_ordered_logistics, aes(order, logoddsratio, fill = srLabel)) +
+unweighted_log_odds_bigrams_ordered_plot_logistics <- 
+  unweighted_log_odds_bigrams_ordered_logistics %>% 
+  ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
   labs(x = NULL, y = "log_odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
@@ -724,7 +723,7 @@ grid.arrange(network_graph_maneuver_mq, network_graph_maneuver_hq, ncol = 2)
 
 ## Network Graph on Bigrams with Clusters
 
-```{r, fig.width = 12, fig.height = 10}
+```{r, fig.width = 12, fig.height = 7}
 par(mfrow=c(1, 2))
 clp_mq_maneuver <- cluster_optimal(bigram_graph_maneuver_mq)
 V(bigram_graph_maneuver_mq)$community <- clp_mq_maneuver$membership
@@ -818,7 +817,7 @@ log_freq_plot <- ggplot(freq_log, aes(x = freq_log$"Most Qualified", y = freq_lo
   geom_abline(color = "red") +
   ggtitle("Logistics Frequency Plot")
 ```
-```{r, fig.width = 12}
+```{r, fig.width = 12, fig.height = 6}
 grid.arrange(combat_freq_plot, log_freq_plot, ncol = 2)
 ```
 
