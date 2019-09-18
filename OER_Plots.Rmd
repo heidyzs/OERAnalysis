@@ -1,0 +1,179 @@
+---
+title: "OER_Plots"
+author: "Heidy Shi"
+date: "September 18, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggthemes)
+library(ggrepel)
+library(gridExtra)
+library(tidytext)
+library(tidylo)
+library(tidyr)
+library(scales)
+library(reshape2)
+library(wordcloud)
+library(tidylo)
+```
+
+## OER Analysis
+
+```{r, include = FALSE}
+oers = readxl::read_xlsx("OER_Narratives.xlsx")
+names(oers)
+summary(oers)
+
+oers$gender = as.factor(oers$gender)
+oers$branch = as.factor(oers$branch)
+oers$raterLabel = as.factor(oers$raterLabel)
+oers$srLabel = as.factor(oers$srLabel)
+
+summary(oers %>% filter(branch == "47"))
+
+oers1 = oers %>% filter(srLabel %in% c("Highly Qualified", "Most Qualified", "Qualified", "Not Qualified")) %>% 
+  filter(raterLabel %in% c("Capable", "Excels","Proficient","Unsatisfactory")) %>% drop_na()
+
+oers1$srLabel = fct_relevel(oers1$srLabel,"Most Qualified","Highly Qualified","Qualified","Not Qualified")
+
+summary(oers1)
+```
+
+##Total Number of OERs in 2017 by Branch 
+
+```{r, include=FALSE}
+base_branch = c("AD", "AG", "AR", "AV", "CM", "CY", "EN", "FA", "FM", "IN", "MI", "MP", "MS", "OD", "EOD", "QM", "SC", "TC")
+combat_arms = c("IN", "AR", "FA")
+combat_support = c("IN", "QM", "AR","TC", "FA","OD")
+logistics = c("QM", "TC", "OD")
+
+oers1_pect = oers1 %>% 
+  group_by(branch, srLabel) %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count))
+#filter(branch %in% base_branch)
+
+oers2 = oers1_pect %>% 
+  ungroup() %>% 
+  group_by(branch) %>% 
+  mutate(total = sum(count)) %>% 
+  ungroup() %>% 
+  mutate(final = sum(count)) %>% 
+  mutate(percent = total/final)
+
+addline_format <- function(x,...){
+  gsub(',','\n',x)
+}
+
+#FINAL GRAPH, SORTED BY ORDER#
+ggplot(data = oers1_pect, mapping = aes(x = reorder(branch, -count), y = count, fill = srLabel))+
+  geom_bar(stat = "identity")+
+  labs(y = "Number of OERs", x = "Branch", fill = "Block Check Rating")+
+  theme_minimal()+
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+
+```
+
+## Distribution of OERs by Senior Rater Label Block Check
+```{r}
+oers1c = oers1 %>% 
+  group_by(srLabel) %>% 
+  tally() %>% 
+  mutate(year = "2017") %>% 
+  mutate(pct=n/sum(n))
+
+ggplot(data = oers1c,mapping = aes(x = year, y= pct,fill = srLabel))+
+  geom_bar(stat = "identity")+
+  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  #geom_text_repel(aes(label = paste(as.character(signif(100*pct, 3))) + "%"), position = "stack",
+                  #size = 4.25, hjust = 1.25, vjust = 1)+
+  geom_abline(intercept = .5, slope = 0, linetype = 2)+
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  xlab("Total OER Profile")+
+  ylab("Percentage of OERs Received")+
+  labs(fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick")) +
+  coord_flip()
+```
+
+##Distribution of OERs Across Base Branches
+```{r}
+oers1a = oers1 %>% 
+  group_by(branch, srLabel) %>% 
+  tally() %>% 
+  mutate(pct = n/sum(n))
+
+oers1b = oers1a %>% group_by(branch) %>% filter(branch %in% base_branch) %>%  filter(sum(n)>100)
+
+ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
+  geom_bar(stat= "identity")+
+  geom_abline(intercept = .5, slope = 0, linetype = 2)+
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  xlab("Branch")+
+  ylab("Percentage of OERs Received")+
+  labs(fill = "")+
+  #ggtitle("Distribution of OERS for Braches with Greater than 100 OERS in 2017") +
+  scale_y_continuous(labels=percent)+
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod", "Qualified"="orangered1", "Not Qualified"="firebrick"))
+
+```
+
+#TF-IDF Plot
+```{r}
+#####TEXT ANALYSIS###############
+
+#SENIOR NARRATIVES
+tidy_oer_senior = oers1 %>% unnest_tokens(srNarrativeWords, srNarrative) %>% 
+  anti_join(stop_words, by = c("srNarrativeWords" ="word")) %>% count(branch, srNarrativeWords, sort = TRUE)
+tidy_oer_senior <- tidy_oer_senior[!grepl(".*xx.*", tidy_oer_senior$srNarrativeWords),]
+
+
+###TF_IDF ANALYSIS of One Word####
+
+tidy_idf_senior = tidy_oer_senior %>% bind_tf_idf(srNarrativeWords, branch, n)
+tidy_idf_senior = tidy_idf_senior %>% arrange(desc(tf_idf))
+
+
+#Combat Arms and Support, SORTED#
+combined_tf_ordered <-
+  tidy_idf_senior %>%
+  filter(branch %in% combat_support) %>%
+  mutate(srNarrativeWords = factor(srNarrativeWords, levels = rev(unique(srNarrativeWords)))) %>% 
+  group_by(branch) %>%
+  top_n(10) %>% 
+  ungroup() %>% 
+  arrange(branch, tf_idf) %>% 
+  mutate(order = row_number())
+
+combined_tf_ordered$branch <-  factor(combined_tf_ordered$branch, 
+                                      levels = c("IN", "AR", "FA", "QM", "TC", "OD"))
+
+###TF-IDF FINAL GRAPH###
+tf_idf_word_plot <- ggplot(combined_tf_ordered, aes(order, tf_idf, fill = branch)) +
+  geom_bar(stat = 'identity', show.legend = FALSE) +
+  labs(x = NULL, y = "tf-idf") +
+  facet_wrap(~branch, ncol = 3, scales = "free") +
+  theme_hc() +
+  coord_flip()+
+  scale_colour_hc()+
+  scale_fill_hc() +
+  scale_x_continuous(
+    breaks = combined_tf_ordered$order,
+    labels = paste0(combined_tf_ordered$srNarrativeWords),
+    expand = c(0,0)
+  ) +
+  ggtitle("Tf-Idf By Branch")
+
+tf_idf_word_plot
+```
+
