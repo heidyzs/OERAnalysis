@@ -1,5 +1,5 @@
 ---
-title: "OER_Plots"
+title: "OER Plots"
 author: "Heidy Shi"
 date: "September 18, 2019"
 output: 
@@ -19,7 +19,6 @@ library(tidyr)
 library(scales)
 library(reshape2)
 library(wordcloud)
-library(tidylo)
 ```
 
 # General OER Analysis
@@ -47,7 +46,8 @@ summary(oers1)
 ## Total Number of OERs in 2017 by Branch 
 
 ```{r, include=FALSE}
-base_branch = c("AD", "AG", "AR", "AV", "CM", "CY", "EN", "FA", "FM", "IN", "MI", "MP", "MS", "OD", "EOD", "QM", "SC", "TC")
+base_branch = c("AD", "AG", "AR", "AV", "CM", "CY", "EN", "FA", "FM", "IN", "MI", "MP", 
+                "MS", "OD", "EOD", "QM", "SC", "TC")
 combat_arms = c("IN", "AR", "FA")
 combat_support = c("IN", "QM", "AR","TC", "FA","OD")
 logistics = c("QM", "TC", "OD")
@@ -297,8 +297,9 @@ bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word1),]
 bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word2),]
 
 custom_stop_words<-c("i","in","with","an","have", "the", "is", "a", "senior", "rate",
-               "for","to","and","of", "has", "he", "his", "her","she", "be", "career", "as", "by", "as", "at", "this",
-                     "who", "rated", "commander", "command")
+                     "for","to","and","of", "has", "he", "his", "her","she",
+                     "be", "career", "as", "by",
+                     "as", "at", "this", "who", "rated", "commander", "command")
 
 bigram_filter <- bigram_separated %>% 
   filter(!word1 %in% stop_words$word) %>% 
@@ -383,7 +384,8 @@ freq2_bigrams_logistics <- df1_bigram_logistics %>% group_by(srLabel) %>% count(
   mutate(total = sum(n)) %>% 
   mutate(totalbigramsnotinlabel = total-n)
 
-dfjoined_bigram_logistics <- left_join(dfjoined_bigram_logistics, freq2_bigrams_logistics, by = "srLabel")
+dfjoined_bigram_logistics <- left_join(dfjoined_bigram_logistics, 
+                                       freq2_bigrams_logistics, by = "srLabel")
 
 dfjoined_bigram_logistics <- dfjoined_bigram_logistics %>% mutate(top= (n.x+1)/(n+1),
                                                             bottom = (bigramsnotinlabel+1)/(totalbigramsnotinlabel+1),
@@ -400,8 +402,9 @@ unweighted_log_odds_bigrams_ordered_logistics <-
   arrange(srLabel, logoddsratio) %>% 
   mutate(order = row_number())
 
-unweighted_log_odds_bigrams_ordered_logistics$srLabel <-  factor(unweighted_log_odds_bigrams_ordered_logistics$srLabel,
-                                                              levels = c("Most Qualified", "Highly Qualified"))
+unweighted_log_odds_bigrams_ordered_logistics$srLabel <-
+  factor(unweighted_log_odds_bigrams_ordered_logistics$srLabel, 
+         levels = c("Most Qualified", "Highly Qualified"))
 ```
 
 ```{r, fig.width = 12}

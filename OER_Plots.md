@@ -1,4 +1,4 @@
-OER\_Plots
+OER Plots
 ================
 Heidy Shi
 September 18, 2019

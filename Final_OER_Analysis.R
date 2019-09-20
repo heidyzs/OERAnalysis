@@ -691,9 +691,9 @@ oer_words_by_branch <- oer_words_by_branch[!grepl(".*xx.*", oer_words_by_branch$
 oer_words_by_branch <- oer_words_by_branch %>% select(branch, srLabel, srNarrativeWords)
 
 oer_words_by_branch$srLabel <- as.character(oer_words_by_branch$srLabel)
-oer_words_by_branch$srLabel[oer_words_by_branch$srLabel == "Most Qualified"] <- "MQ"
-oer_words_by_branch$srLabel[oer_words_by_branch$srLabel == "Highly Qualified"] <- "HQ"
-oer_words_by_branch$srLabel <- as.factor(oer_words_by_branch$srLabel)
+#oer_words_by_branch$srLabel[oer_words_by_branch$srLabel == "Most Qualified"] <- "MQ"
+#oer_words_by_branch$srLabel[oer_words_by_branch$srLabel == "Highly Qualified"] <- "HQ"
+#oer_words_by_branch$srLabel <- as.factor(oer_words_by_branch$srLabel)
 
 
 word_cors <- oer_words_by_branch %>% select(srLabel, branch, srNarrativeWords) %>% 
@@ -776,5 +776,32 @@ log_freq_plot <- ggplot(freq_log, aes(x = freq_log$"Most Qualified", y = freq_lo
 
 grid.arrange(combat_freq_plot, log_freq_plot, ncol = 2)
 
+#Extra Stuff
+
+tidy_words <- oer_words_by_branch %>%
+  filter(srLabel %in%(c("Not Qualified", "Qualified"))) %>% 
+  select(srLabel, srNarrativeWords) %>% 
+  group_by(srLabel, srNarrativeWords) %>% 
+  filter(n() >= 20) %>% 
+  filter(!srNarrativeWords %in% c("jake", "pete", "ed", "alex", "andy", "nate", "phil", "cadet"))
+
+freq_words <- tidy_words %>% 
+  group_by(srLabel) %>% 
+  count(srNarrativeWords, sort = TRUE) %>% 
+  left_join(tidy_words %>% group_by(srLabel) %>% summarise(total = n())) %>% 
+  mutate(freq = n/total)
+
+freq_words <- freq_words %>% select(srLabel, srNarrativeWords, freq) %>% 
+  spread(srLabel, freq) %>% 
+  drop_na()
+
+freq_words %>% ggplot(aes(x = freq_words$"Not Qualified", y = freq_words$"Qualified")) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.25, height = 0.25) +
+  geom_text(aes(label = srNarrativeWords), check_overlap = TRUE, vjust = 0.75, size = 3) +
+  labs(x = "Not Qualified", y = "Qualified") +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  geom_abline(color = "red") +
+  ggtitle("Not Qualified vs Qualified Frequency Plot")
 
 
