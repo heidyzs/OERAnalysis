@@ -74,29 +74,27 @@ narrative_dtm <- tidy_narrative_words %>% cast_dtm(document, word, n)
 narrative_lda <- LDA(narrative_dtm, k = 2, control = list(seed = 1234))
 narrative_documents <- tidy(narrative_lda, matrix = "gamma")
 
-narrative_documents
+narrative_documents %>% arrange(document)
 ```
 
     ## # A tibble: 41,252 x 3
     ##    document               topic gamma
     ##    <chr>                  <int> <dbl>
-    ##  1 Highly Qualified_2023      1 0.518
-    ##  2 Highly Qualified_2121      1 0.501
-    ##  3 Highly Qualified_4121      1 0.507
-    ##  4 Highly Qualified_7814      1 0.482
-    ##  5 Most Qualified_18280       1 0.485
-    ##  6 Highly Qualified_10719     1 0.475
-    ##  7 Highly Qualified_11144     1 0.491
-    ##  8 Highly Qualified_1469      1 0.489
-    ##  9 Highly Qualified_6996      1 0.480
-    ## 10 Highly Qualified_8299      1 0.515
+    ##  1 Highly Qualified_10        1 0.507
+    ##  2 Highly Qualified_10        2 0.493
+    ##  3 Highly Qualified_100       1 0.488
+    ##  4 Highly Qualified_100       2 0.512
+    ##  5 Highly Qualified_10002     1 0.507
+    ##  6 Highly Qualified_10002     2 0.493
+    ##  7 Highly Qualified_10003     1 0.491
+    ##  8 Highly Qualified_10003     2 0.509
+    ##  9 Highly Qualified_10004     1 0.492
+    ## 10 Highly Qualified_10004     2 0.508
     ## # ... with 41,242 more rows
 
 Create `narrative_classifications` that picks the higher `gamma` and uses that to classify the narrative as either falling in topic 1 or topic 2.
 
 ``` r
-assignments <- augment(narrative_lda, data = narrative_dtm)
-
 narrative_classifications <- narrative_documents %>% 
   separate(document, c("label", "narrative"), sep = "_", convert = TRUE) %>% 
   group_by(label, narrative) %>% 
@@ -168,14 +166,16 @@ check_classifications %>%
 
 We correctly put 6256 HQ narratives into the HQ bin and 5079 MQ narratives into the MQ bin.
 
-Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics.
+Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics. We use `augment` to see what words were classified into each topic that contributed to the document being assigned to its respective topic.
 
 ``` r
+assignments <- augment(narrative_lda, data = narrative_dtm)
+
 assignments1 <- assignments %>% 
   separate(document, c("label", "narrative"), sep = "_", convert = TRUE) %>% 
   inner_join(narrative_topics, by = c(".topic" = "topic"))
 
-#Wrong words that put us in the wrong cluster, should be the common words across the two labels
+#Wrong words that put us in the wrong cluster
 wrong_words <- assignments1 %>% 
   select(-c(narrative)) %>% 
   filter(label != consensus) %>% 
