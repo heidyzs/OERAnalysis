@@ -64,7 +64,7 @@ oer_dtm <- tidy_oer_words %>%
 oer_lda <- LDA(oer_dtm, k = 2, control = list(seed = 1234))
 ```
 
-"Beta" is the probability of the term being generated from that topic. Using beta, we can look at the top words, by its "beta" value, for topic 1 and topic 2.
+We want to look at `beta`, which is the probability of the term being generated from that topic. Using beta, we can look at the top words, by its `beta` value, for topic 1 and topic 2.
 
 Note: LDA creates these two topics, however we do not know what topic 1 and topic 2 actually represent. 
 ```{r, fig.width = 10}
@@ -79,10 +79,10 @@ oer_topics %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>% arrange(top
   scale_x_reordered()
 ```
 
-## LDA by each narrative
+## LDA by Narrative
 We want to see how well LDA was able to classify each narrative by its topics. 
 
-First, we need to clean the data. Filtering the data is done at the beginning so we can add "numbers" to each narrative so that we can group words for each narrative to eventually find which topic dominates the narrative based on its words. Analysis was only done on maneuver branches.
+First, we need to clean the data. Filtering the data is done at the beginning so we can add `number` to each narrative. That way, when we unnest tokens, we still know which words came from each narrative to eventually find which topic dominates the narrative based on its words. (Analysis was only done on maneuver branches)
 ```{r}
 combat_arms <- c("IN", "AR", "FA")
 by_narrative <- oers1 %>% 
@@ -109,7 +109,7 @@ tidy_narrative_words <- tidy_narrative_words %>%
   count(document, word, sort=TRUE) %>% ungroup()
 ```
 
-Next, create the document term matrix, this time we will use "gamma" that looks at document probability of falling into one topic or the other.
+Next, create the document term matrix, this time we will use `gamma` that looks at document probability of falling into one topic or the other.
 ```{r}
 narrative_dtm <- tidy_narrative_words %>% cast_dtm(document, word, n)
 narrative_lda <- LDA(narrative_dtm, k = 2, control = list(seed = 1234))
@@ -118,7 +118,7 @@ narrative_documents <- tidy(narrative_lda, matrix = "gamma")
 narrative_documents
 ```
 
-Create `narrative_classifications` that picks the higher "gamma" and uses that to classify the narrative as either falling in topic 1 or topic 2.
+Create `narrative_classifications` that picks the higher `gamma` and uses that to classify the narrative as either falling in topic 1 or topic 2.
 ```{r}
 assignments <- augment(narrative_lda, data = narrative_dtm)
 
@@ -129,7 +129,7 @@ narrative_classifications <- narrative_documents %>%
 
 narrative_classifications
 ```
-We get a count of the total number of MQ and HQ narratives falling in topic 1 and falling in topic 2. The one that dominates for each topic will be defined as "consensus." For example, if we have more HQ narratives that fall in topic 1 than MQ narratives, then topic 1 is assigned as being the topic to represent HQ narratives. For our case, HQ is topic 1 and MQ is topic 2.
+We need to get a count of the total number of MQ and HQ narratives falling in topic 1 and falling in topic 2 to create `narrative_topics`. The one that dominates for each topic will be defined as `consensus`. For example, if we have more HQ narratives that fall in topic 1 than MQ narratives, then topic 1 is assigned as being the topic to represent HQ narratives. For our case, HQ is topic 1 and MQ is topic 2.
 ```{r}
 narrative_topics <- narrative_classifications %>% count(label, topic) %>% 
   group_by(label) %>% top_n(1, n) %>% 
@@ -139,7 +139,7 @@ narrative_topics <- narrative_classifications %>% count(label, topic) %>%
 narrative_topics
 ```
 
-Now we want to see how well were able to cluster by topics. Create `check_classifications` to bind our "consensus" results with our topics.
+Now we want to see how well were able to cluster by topics. Create `check_classifications` to bind our consensus results with our `narrative_classifications`  by `topic`.
 ```{r}
 check_classifications <- narrative_classifications %>% 
   inner_join(narrative_topics, by = c("topic" = "topic"))
@@ -153,7 +153,7 @@ check_classifications %>%
   filter(label == consensus) %>% 
   count(label, consensus) 
 ```
-We correctly put 6256 HQ into HQ bin and 5079 MQ into MQ bin.
+We correctly put 6256 HQ narratives into the HQ bin and 5079 MQ narratives into the MQ bin.
 
 Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics. 
 ```{r}
@@ -167,34 +167,38 @@ wrong_words <- assignments1 %>%
   filter(label != consensus) %>% 
   group_by(label, consensus, term) %>% 
   count(term, sort = TRUE) %>% ungroup() %>% 
-  group_by(label) %>% top_n(10) %>% arrange(desc(label))
+  group_by(label) %>% arrange(desc(n))
 
 wrong_words
 ```
 
-Top words that contributed to incorrectly classifying our narratives. Naturally, we would expect that words common between both narratives should be the ones that had difficulty classifying the documents. 
+Top words that contributed to incorrectly classifying our narratives.
 ```{r, fig.width = 14}
 grid.arrange(
-  wrong_words %>% ungroup() %>% filter(label == "Highly Qualified") %>% 
-  ungroup %>% 
-  mutate(term = reorder(term, n)) %>% 
-  ggplot(aes(term, n, fill = label)) +
-  geom_col(fill = "lightgoldenrod", show.legend = FALSE) +
-  #facet_wrap(~label, ncol = 2, scales = "free") +
-  labs(x = NULL, y = "count") +
-  coord_flip () +
-  theme_hc() +
+  wrong_words %>% top_n(10) %>% 
+    arrange(desc(label)) %>% 
+    ungroup() %>% 
+    filter(label == "Highly Qualified") %>%
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "lightgoldenrod", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
     ggtitle("HQ Words That Incorrectly Classified the Narrative as MQ"),
   
-  wrong_words %>% ungroup() %>% filter(label == "Most Qualified") %>% 
-  ungroup %>% 
-  mutate(term = reorder(term, n)) %>% 
-  ggplot(aes(term, n, fill = label)) +
-  geom_col(fill = "springgreen3", show.legend = FALSE) +
-  #facet_wrap(~label, ncol = 2, scales = "free") +
-  labs(x = NULL, y = "count") +
-  coord_flip () +
-  theme_hc() +
+    wrong_words %>% top_n(10) %>% 
+    arrange(desc(label)) %>%
+    ungroup() %>% 
+    filter(label == "Most Qualified") %>% 
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "springgreen3", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
     ggtitle("MQ Words That Incorrectly Classified the Narrative as HQ"),
   
   ncol = 2)

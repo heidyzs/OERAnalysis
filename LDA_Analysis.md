@@ -16,7 +16,7 @@ oer_dtm <- tidy_oer_words %>%
 oer_lda <- LDA(oer_dtm, k = 2, control = list(seed = 1234))
 ```
 
-"Beta" is the probability of the term being generated from that topic. Using beta, we can look at the top words, by its "beta" value, for topic 1 and topic 2.
+We want to look at `beta`, which is the probability of the term being generated from that topic. Using beta, we can look at the top words, by its `beta` value, for topic 1 and topic 2.
 
 Note: LDA creates these two topics, however we do not know what topic 1 and topic 2 actually represent.
 
@@ -34,12 +34,12 @@ oer_topics %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>% arrange(top
 
 ![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
-LDA by each narrative
----------------------
+LDA by Narrative
+----------------
 
 We want to see how well LDA was able to classify each narrative by its topics.
 
-First, we need to clean the data. Filtering the data is done at the beginning so we can add "numbers" to each narrative so that we can group words for each narrative to eventually find which topic dominates the narrative based on its words. Analysis was only done on maneuver branches.
+First, we need to clean the data. Filtering the data is done at the beginning so we can add `number` to each narrative. That way, when we unnest tokens, we still know which words came from each narrative to eventually find which topic dominates the narrative based on its words. (Analysis was only done on maneuver branches)
 
 ``` r
 combat_arms <- c("IN", "AR", "FA")
@@ -67,7 +67,7 @@ tidy_narrative_words <- tidy_narrative_words %>%
   count(document, word, sort=TRUE) %>% ungroup()
 ```
 
-Next, create the document term matrix, this time we will use "gamma" that looks at document probability of falling into one topic or the other.
+Next, create the document term matrix, this time we will use `gamma` that looks at document probability of falling into one topic or the other.
 
 ``` r
 narrative_dtm <- tidy_narrative_words %>% cast_dtm(document, word, n)
@@ -92,7 +92,7 @@ narrative_documents
     ## 10 Highly Qualified_8299      1 0.515
     ## # ... with 41,242 more rows
 
-Create `narrative_classifications` that picks the higher "gamma" and uses that to classify the narrative as either falling in topic 1 or topic 2.
+Create `narrative_classifications` that picks the higher `gamma` and uses that to classify the narrative as either falling in topic 1 or topic 2.
 
 ``` r
 assignments <- augment(narrative_lda, data = narrative_dtm)
@@ -120,7 +120,7 @@ narrative_classifications
     ## 10 Highly Qualified     11951     1 0.506
     ## # ... with 20,616 more rows
 
-We get a count of the total number of MQ and HQ narratives falling in topic 1 and falling in topic 2. The one that dominates for each topic will be defined as "consensus." For example, if we have more HQ narratives that fall in topic 1 than MQ narratives, then topic 1 is assigned as being the topic to represent HQ narratives. For our case, HQ is topic 1 and MQ is topic 2.
+We need to get a count of the total number of MQ and HQ narratives falling in topic 1 and falling in topic 2 to create `narrative_topics`. The one that dominates for each topic will be defined as `consensus`. For example, if we have more HQ narratives that fall in topic 1 than MQ narratives, then topic 1 is assigned as being the topic to represent HQ narratives. For our case, HQ is topic 1 and MQ is topic 2.
 
 ``` r
 narrative_topics <- narrative_classifications %>% count(label, topic) %>% 
@@ -137,7 +137,7 @@ narrative_topics
     ## 1 Highly Qualified     1
     ## 2 Most Qualified       2
 
-Now we want to see how well were able to cluster by topics. Create `check_classifications` to bind our "consensus" results with our topics.
+Now we want to see how well were able to cluster by topics. Create `check_classifications` to bind our consensus results with our `narrative_classifications` by `topic`.
 
 ``` r
 check_classifications <- narrative_classifications %>% 
@@ -166,7 +166,7 @@ check_classifications %>%
     ## 1 Highly Qualified Highly Qualified  6256
     ## 2 Most Qualified   Most Qualified    5079
 
-We correctly put 6256 HQ into HQ bin and 5079 MQ into MQ bin.
+We correctly put 6256 HQ narratives into the HQ bin and 5079 MQ narratives into the MQ bin.
 
 Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics.
 
@@ -181,60 +181,55 @@ wrong_words <- assignments1 %>%
   filter(label != consensus) %>% 
   group_by(label, consensus, term) %>% 
   count(term, sort = TRUE) %>% ungroup() %>% 
-  group_by(label) %>% top_n(10) %>% arrange(desc(label))
+  group_by(label) %>% arrange(desc(n))
 
 wrong_words
 ```
 
-    ## # A tibble: 20 x 4
+    ## # A tibble: 7,239 x 4
     ## # Groups:   label [2]
-    ##    label            consensus        term               n
-    ##    <chr>            <chr>            <chr>          <int>
-    ##  1 Most Qualified   Highly Qualified potential       6420
-    ##  2 Most Qualified   Highly Qualified officer         3616
-    ##  3 Most Qualified   Highly Qualified select          3539
-    ##  4 Most Qualified   Highly Qualified peers           3057
-    ##  5 Most Qualified   Highly Qualified send            2725
-    ##  6 Most Qualified   Highly Qualified 1               2392
-    ##  7 Most Qualified   Highly Qualified leader          2232
-    ##  8 Most Qualified   Highly Qualified ahead           2167
-    ##  9 Most Qualified   Highly Qualified immediately     2088
-    ## 10 Most Qualified   Highly Qualified selected        1707
-    ## 11 Highly Qualified Most Qualified   promote         6375
-    ## 12 Highly Qualified Most Qualified   top             5789
-    ## 13 Highly Qualified Most Qualified   unlimited       3595
-    ## 14 Highly Qualified Most Qualified   battalion       3571
-    ## 15 Highly Qualified Most Qualified   company         3134
-    ## 16 Highly Qualified Most Qualified   positions       2900
-    ## 17 Highly Qualified Most Qualified   responsibility  2822
-    ## 18 Highly Qualified Most Qualified   future          2163
-    ## 19 Highly Qualified Most Qualified   excel           1931
-    ## 20 Highly Qualified Most Qualified   serve           1795
+    ##    label            consensus        term          n
+    ##    <chr>            <chr>            <chr>     <int>
+    ##  1 Most Qualified   Highly Qualified potential  6420
+    ##  2 Highly Qualified Most Qualified   promote    6375
+    ##  3 Highly Qualified Most Qualified   top        5789
+    ##  4 Most Qualified   Highly Qualified officer    3616
+    ##  5 Highly Qualified Most Qualified   unlimited  3595
+    ##  6 Highly Qualified Most Qualified   battalion  3571
+    ##  7 Most Qualified   Highly Qualified select     3539
+    ##  8 Highly Qualified Most Qualified   company    3134
+    ##  9 Most Qualified   Highly Qualified peers      3057
+    ## 10 Highly Qualified Most Qualified   positions  2900
+    ## # ... with 7,229 more rows
 
-Top words that contributed to incorrectly classifying our narratives. Naturally, we would expect that words common between both narratives should be the ones that had difficulty classifying the documents.
+Top words that contributed to incorrectly classifying our narratives.
 
 ``` r
 grid.arrange(
-  wrong_words %>% ungroup() %>% filter(label == "Highly Qualified") %>% 
-  ungroup %>% 
-  mutate(term = reorder(term, n)) %>% 
-  ggplot(aes(term, n, fill = label)) +
-  geom_col(fill = "lightgoldenrod", show.legend = FALSE) +
-  #facet_wrap(~label, ncol = 2, scales = "free") +
-  labs(x = NULL, y = "count") +
-  coord_flip () +
-  theme_hc() +
+  wrong_words %>% top_n(10) %>% 
+    arrange(desc(label)) %>% 
+    ungroup() %>% 
+    filter(label == "Highly Qualified") %>%
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "lightgoldenrod", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
     ggtitle("HQ Words That Incorrectly Classified the Narrative as MQ"),
   
-  wrong_words %>% ungroup() %>% filter(label == "Most Qualified") %>% 
-  ungroup %>% 
-  mutate(term = reorder(term, n)) %>% 
-  ggplot(aes(term, n, fill = label)) +
-  geom_col(fill = "springgreen3", show.legend = FALSE) +
-  #facet_wrap(~label, ncol = 2, scales = "free") +
-  labs(x = NULL, y = "count") +
-  coord_flip () +
-  theme_hc() +
+    wrong_words %>% top_n(10) %>% 
+    arrange(desc(label)) %>%
+    ungroup() %>% 
+    filter(label == "Most Qualified") %>% 
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "springgreen3", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
     ggtitle("MQ Words That Incorrectly Classified the Narrative as HQ"),
   
   ncol = 2)
