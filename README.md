@@ -1,5 +1,6 @@
 # OER Analysis
-OER Analysis Files
+
+Repository contains all files created when conducting OER analysis. 
 
 ## File Names
 
