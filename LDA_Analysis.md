@@ -236,3 +236,349 @@ grid.arrange(
 ```
 
 ![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-12-1.png)
+
+LDA Using Bigrams in MQ and HQ Narratives
+-----------------------------------------
+
+``` r
+bigram_senior = oers1 %>% unnest_tokens(bigram, srNarrative, token = "ngrams", n=2)
+bigram_separated <- bigram_senior %>% separate(bigram, c("word1", "word2"), sep = " ")
+bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word1),] 
+bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word2),]
+
+custom_stop_words<-c("i","in","with","an","have", "the", "is", "a", "senior", "rate",
+                     "for","to","and","of", "has", "he", "his", "her","she", "be", "career", "as", "by", "as", "at", "this",
+                     "who", "rated", "commander", "command")
+
+bigram_filter <- bigram_separated %>% 
+  filter(!word1 %in% stop_words$word) %>% 
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!word1 %in% custom_stop_words) %>% 
+  filter(!word2 %in% custom_stop_words)
+```
+
+Create a document term matrix, filterd to keep only top qualified OERs.
+
+``` r
+top_qualified = c("Most Qualified", "Highly Qualified")
+tidy_bigrams <- bigram_filter %>% 
+  unite(bigram, word1, word2, sep = " ") %>% 
+  count(srLabel, bigram, sort = TRUE)
+tidy_bigrams$srLabel <- as.character(tidy_bigrams$srLabel)
+oer_bigram_dtm<- tidy_bigrams %>% 
+  filter(srLabel %in% top_qualified) %>% 
+  cast_dtm(srLabel, bigram, n)
+bigram_lda <- LDA(oer_bigram_dtm, k = 2, control = list(seed = 1234))
+```
+
+We want to look at `beta` once again, which is the probability that the bigram is generated from that topic.
+
+``` r
+oer_bigram_topics <- tidy(bigram_lda, matrix = "beta")
+
+oer_bigram_topics %>% group_by(topic) %>% top_n(10, beta) %>% 
+  ungroup() %>% arrange(topic, - beta) %>% 
+  mutate(term = reorder_within(term, beta, topic)) %>% 
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-15-1.png)
+
+LDA by Narrative Using Bigrams
+------------------------------
+
+Clean the data, unnest by bigrams.
+
+``` r
+by_narrative_bigram <- by_narrative %>% unnest_tokens(bigram, srNarrative, token = "ngrams", n=2)
+
+by_narrative_bigram_separated <- by_narrative_bigram %>% 
+  separate(bigram, c("word1", "word2"), sep = " ")
+by_narrative_bigram_separated <- 
+  by_narrative_bigram_separated[!grepl(".*xx.*", by_narrative_bigram_separated$word1),] 
+by_narrative_bigram_separated <- 
+  by_narrative_bigram_separated[!grepl(".*xx.*", by_narrative_bigram_separated$word2),]
+
+custom_stop_words<-c("i","in","with","an","have", "the", "is", "a", "senior", "rate",
+                     "for","to","and","of", "has", "he", "his", "her","she", "be", 
+                     "career", "as", "by", "as", "at", "this",
+                     "who", "rated", "commander", "command")
+bigram_narrative_filter <- by_narrative_bigram_separated %>% 
+  filter(!word1 %in% stop_words$word) %>% 
+  filter(!word2 %in% stop_words$word) %>% 
+  filter(!word1 %in% custom_stop_words) %>% 
+  filter(!word2 %in% custom_stop_words)
+
+tidy_narrative_bigram <- bigram_narrative_filter %>% 
+  unite(bigram, word1, word2, sep = " ") %>% 
+  count(document, bigram, sort=TRUE) %>% ungroup()
+```
+
+Next, create the document term matrix and use `gamma` to analyze document probability.
+
+``` r
+narrative_bigram_dtm <- tidy_narrative_bigram %>% cast_dtm(document, bigram, n)
+narrative_bigram_lda <- LDA(narrative_bigram_dtm, k = 2, control = list(seed = 1234))
+narrative_bigram_documents <- tidy(narrative_bigram_lda, matrix = "gamma")
+narrative_bigram_documents %>% arrange(document)
+```
+
+    ## # A tibble: 41,220 x 3
+    ##    document               topic gamma
+    ##    <chr>                  <int> <dbl>
+    ##  1 Highly Qualified_10        1 0.508
+    ##  2 Highly Qualified_10        2 0.492
+    ##  3 Highly Qualified_100       1 0.509
+    ##  4 Highly Qualified_100       2 0.491
+    ##  5 Highly Qualified_10002     1 0.503
+    ##  6 Highly Qualified_10002     2 0.497
+    ##  7 Highly Qualified_10003     1 0.501
+    ##  8 Highly Qualified_10003     2 0.499
+    ##  9 Highly Qualified_10004     1 0.501
+    ## 10 Highly Qualified_10004     2 0.499
+    ## # ... with 41,210 more rows
+
+Create classifications for bigrams that will pick the higher `gamma` to classify the narrative as either falling in topic 1 or topic 2.
+
+``` r
+narrative_bigram_classifications <- narrative_bigram_documents %>% 
+  separate(document, c("label", "narrative"), sep = "_", convert = TRUE) %>% 
+  group_by(label, narrative) %>% 
+  top_n(1, gamma) %>% ungroup()
+narrative_bigram_classifications
+```
+
+    ## # A tibble: 20,610 x 4
+    ##    label            narrative topic gamma
+    ##    <chr>                <int> <int> <dbl>
+    ##  1 Highly Qualified     12530     1 0.516
+    ##  2 Highly Qualified     14918     1 0.504
+    ##  3 Highly Qualified     15102     1 0.500
+    ##  4 Highly Qualified     17087     1 0.507
+    ##  5 Highly Qualified     18262     1 0.517
+    ##  6 Highly Qualified     19954     1 0.514
+    ##  7 Highly Qualified      4210     1 0.514
+    ##  8 Highly Qualified      4275     1 0.512
+    ##  9 Highly Qualified      4593     1 0.502
+    ## 10 Highly Qualified       558     1 0.515
+    ## # ... with 20,600 more rows
+
+Get a count of total number of MQ and HQ narratives falling in either topic 1 or topic 2
+
+``` r
+narrative_bigram_topics <- narrative_bigram_classifications %>% count(label, topic) %>% 
+  group_by(label) %>% top_n(1, n) %>% 
+  ungroup() %>% 
+  transmute(consensus = label, topic) #used to determine which topic represents which classification
+narrative_bigram_topics
+```
+
+    ## # A tibble: 2 x 2
+    ##   consensus        topic
+    ##   <chr>            <int>
+    ## 1 Highly Qualified     1
+    ## 2 Most Qualified       2
+
+See how well we were able to cluster topics by checking the classifications.
+
+``` r
+#see how well we were able to cluster by topics (mq and hq)
+check_classifications <- narrative_bigram_classifications %>% 
+  inner_join(narrative_bigram_topics, by = c("topic" = "topic"))
+check_classifications$label <- as.factor(check_classifications$label)
+check_classifications$consensus <- as.factor(check_classifications$consensus)
+incorrect <- check_classifications %>% filter(label != consensus) %>% count(label, consensus)
+incorrect
+```
+
+    ## # A tibble: 2 x 3
+    ##   label            consensus            n
+    ##   <fct>            <fct>            <int>
+    ## 1 Highly Qualified Most Qualified    5758
+    ## 2 Most Qualified   Highly Qualified  4275
+
+The model incorrecty put 5758 HQ narratives into MQ bin, put 4275 MQ narratives into HQ bin
+
+``` r
+correct <- check_classifications %>% filter(label == consensus) %>% count(label, consensus)
+correct
+```
+
+    ## # A tibble: 2 x 3
+    ##   label            consensus            n
+    ##   <fct>            <fct>            <int>
+    ## 1 Highly Qualified Highly Qualified  5993
+    ## 2 Most Qualified   Most Qualified    4584
+
+The model correctly put 5993 HQ into the HQ bin and 4584 MQ into the MQ bin.
+
+Now we can build a confusion matrix and analyze how well the model performed.
+
+``` r
+confusionMatrix(check_classifications$consensus, check_classifications$label)
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##                   Reference
+    ## Prediction         Highly Qualified Most Qualified
+    ##   Highly Qualified             5993           4275
+    ##   Most Qualified               5758           4584
+    ##                                           
+    ##                Accuracy : 0.5132          
+    ##                  95% CI : (0.5063, 0.52)  
+    ##     No Information Rate : 0.5702          
+    ##     P-Value [Acc > NIR] : 1               
+    ##                                           
+    ##                   Kappa : 0.0269          
+    ##                                           
+    ##  Mcnemar's Test P-Value : <2e-16          
+    ##                                           
+    ##             Sensitivity : 0.5100          
+    ##             Specificity : 0.5174          
+    ##          Pos Pred Value : 0.5837          
+    ##          Neg Pred Value : 0.4432          
+    ##              Prevalence : 0.5702          
+    ##          Detection Rate : 0.2908          
+    ##    Detection Prevalence : 0.4982          
+    ##       Balanced Accuracy : 0.5137          
+    ##                                           
+    ##        'Positive' Class : Highly Qualified
+    ## 
+
+Model had a 51% accuracy, and a 51% sensitivity, and a 51% specificity.
+
+``` r
+grid.arrange(
+correct %>% mutate(srLabel = "srLabel") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = label)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  ylab("Actual Percentage")+
+  labs(x = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+
+incorrect %>% mutate(srLabel = "srLabel") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = consensus)) +
+  geom_bar(stat = "identity") +
+  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  ylab("Percentage Predicted")+
+  labs(x = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+nrow = 2)
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-23-1.png)
+
+See how well we were able to cluster, based on individual words
+
+``` r
+assignments <- augment(narrative_bigram_lda, data = narrative_bigram_dtm)
+
+assignments1 <- assignments %>% 
+  separate(document, c("label", "narrative"), sep = "_", convert = TRUE) %>% 
+  inner_join(narrative_bigram_topics, by = c(".topic" = "topic"))
+
+assignments1 %>% group_by(label, consensus, term) %>% 
+  count(term, sort = TRUE) %>% 
+  ungroup %>% group_by(consensus) %>% filter(n >= 50) %>% top_n(20)
+```
+
+    ## # A tibble: 40 x 4
+    ## # Groups:   consensus [2]
+    ##    label            consensus        term                         n
+    ##    <chr>            <chr>            <chr>                    <int>
+    ##  1 Most Qualified   Most Qualified   unlimited potential       3559
+    ##  2 Highly Qualified Most Qualified   unlimited potential       3275
+    ##  3 Most Qualified   Highly Qualified promote ahead             1087
+    ##  4 Most Qualified   Most Qualified   field grade               1071
+    ##  5 Highly Qualified Highly Qualified top 10                    1025
+    ##  6 Most Qualified   Most Qualified   resident ile              1023
+    ##  7 Highly Qualified Most Qualified   increased responsibility   995
+    ##  8 Highly Qualified Most Qualified   field grade                975
+    ##  9 Most Qualified   Highly Qualified top 10                     954
+    ## 10 Most Qualified   Most Qualified   top 5                      890
+    ## # ... with 30 more rows
+
+``` r
+wrong_bigrams <- assignments1 %>% select(-c(narrative)) %>% 
+  filter(label != consensus) %>% 
+  group_by(label, consensus, term) %>% 
+  count(term, sort = TRUE) %>% ungroup() %>% 
+  group_by(label) %>% arrange(desc(n))
+
+wrong_bigrams
+```
+
+    ## # A tibble: 30,476 x 4
+    ## # Groups:   label [2]
+    ##    label            consensus        term                         n
+    ##    <chr>            <chr>            <chr>                    <int>
+    ##  1 Highly Qualified Most Qualified   unlimited potential       3275
+    ##  2 Most Qualified   Highly Qualified promote ahead             1087
+    ##  3 Highly Qualified Most Qualified   increased responsibility   995
+    ##  4 Highly Qualified Most Qualified   field grade                975
+    ##  5 Most Qualified   Highly Qualified top 10                     954
+    ##  6 Most Qualified   Highly Qualified resident cgsc              761
+    ##  7 Highly Qualified Most Qualified   resident ile               696
+    ##  8 Most Qualified   Highly Qualified future battalion           651
+    ##  9 Highly Qualified Most Qualified   rating period              636
+    ## 10 Most Qualified   Highly Qualified potential promote          603
+    ## # ... with 30,466 more rows
+
+Top bigrams that contributed incorrectly to classifying our narratives.
+
+``` r
+grid.arrange(
+  wrong_bigrams %>% top_n(10) %>% 
+    arrange(desc(label)) %>% 
+    ungroup() %>% 
+    filter(label == "Highly Qualified") %>%
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "lightgoldenrod", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
+    ggtitle("HQ Words That Incorrectly Classified the Narrative as MQ"),
+  
+    wrong_bigrams %>% top_n(10) %>% 
+    arrange(desc(label)) %>%
+    ungroup() %>% 
+    filter(label == "Most Qualified") %>% 
+    mutate(term = reorder(term, n)) %>% 
+    ggplot(aes(term, n, fill = label)) +
+    geom_col(fill = "springgreen3", show.legend = FALSE) +
+    #facet_wrap(~label, ncol = 2, scales = "free") +
+    labs(x = NULL, y = "count") +
+    coord_flip () +
+    theme_hc() +
+    ggtitle("MQ Words That Incorrectly Classified the Narrative as HQ"),
+  
+  ncol = 2)
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-25-1.png)
