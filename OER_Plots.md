@@ -113,8 +113,8 @@ unweighted_log_odds_plot <- ggplot(unweighted_log_odds_ordered, aes(order, logod
     breaks = unweighted_log_odds_ordered$order,
     labels = paste0(unweighted_log_odds_ordered$srNarrativeWords),
     expand = c(0,0)
-  ) +
-  ggtitle("Log-Odds Ratio By Branch")
+  )
+  #ggtitle("Log-Odds Ratio By Branch")
 
 unweighted_log_odds_plot
 ```
@@ -260,24 +260,25 @@ par(mfrow=c(1, 2))
 clp_mq_maneuver <- cluster_optimal(bigram_graph_maneuver_mq)
 V(bigram_graph_maneuver_mq)$community <- clp_mq_maneuver$membership
 E(bigram_graph_maneuver_mq)$width <- E(bigram_graph_maneuver_mq)$n/300
-#V(bigram_graph_maneuver_mq)$size <- V(bigram_graph_maneuver_mq)$n
+V(bigram_graph_maneuver_mq)$size <- sqrt(degree(bigram_graph_maneuver_mq))*8
 
 mq_clusters_maneuver <- plot(bigram_graph_maneuver_mq, layout = layout_with_fr,
                              edge.arrow.size = 0.2,
-                             vertex.color = V(bigram_graph_maneuver_mq)$community, vertex.size = 10,
+                             vertex.color = V(bigram_graph_maneuver_mq)$community, #vertex.size = 10,
                              vertex.frame.color = "gray", vertex.label.color = "black",
-                             vertex.label.cex = 0.8, vertex.label.dist = 2, 
+                             vertex.label.cex = 0.8, vertex.label.dist = 1, 
                              main = "Most Qualified Maneuver Branches")
 
 clp_hq_maneuver <- cluster_optimal(bigram_graph_maneuver_hq)
 V(bigram_graph_maneuver_hq)$community <- clp_hq_maneuver$membership
 E(bigram_graph_maneuver_hq)$width <- E(bigram_graph_maneuver_hq)$n/300
+V(bigram_graph_maneuver_hq)$size <- sqrt(degree(bigram_graph_maneuver_hq))*8
 
 hq_clusters_maneuver <- plot(bigram_graph_maneuver_hq, layout = layout_with_fr,
                     edge.arrow.size = 0.2,
-                    vertex.color = V(bigram_graph_maneuver_hq)$community, vertex.size = 10,
+                    vertex.color = V(bigram_graph_maneuver_hq)$community, #vertex.size = 10,
                     vertex.frame.color = "gray", vertex.label.color = "black",
-                    vertex.label.cex = 0.8, vertex.label.dist = 2,
+                    vertex.label.cex = 0.8, vertex.label.dist = 1,
                     main = "Highly Qualified Maneuver Branches")
 ```
 
