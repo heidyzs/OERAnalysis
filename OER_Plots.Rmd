@@ -679,7 +679,7 @@ logistics_hq_bigram_plot <-
   ggtitle("Highly Qualified Logistics Branches")
 ```
 ```{r, fig.width = 12, fig.height = 7}
-grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, nrow = 1)
+grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, nrow = 2)
 ```
 
 # Network Graphs

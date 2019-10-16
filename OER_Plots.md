@@ -210,7 +210,7 @@ Percentage of Occurrences
 -------------------------
 
 ``` r
-grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, nrow = 1)
+grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, nrow = 2)
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-21-1.png)
