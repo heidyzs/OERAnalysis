@@ -16,7 +16,7 @@ ggplot(data = oers1_pect, mapping = aes(x = reorder(branch, -count), y = count, 
   theme_minimal()+
   scale_fill_manual(values=c("Most Qualified"="springgreen3", 
                              "Highly Qualified"="lightgoldenrod", 
-                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
+                             "Qualified"="orangered1", "Not Qualified"="black"))
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-3-1.png)
@@ -42,7 +42,7 @@ ggplot(data = oers1c,mapping = aes(x = year, y= pct,fill = srLabel))+
   scale_y_continuous(labels=percent) +
   scale_fill_manual(values=c("Most Qualified"="springgreen3", 
                              "Highly Qualified"="lightgoldenrod", 
-                             "Qualified"="orangered1", "Not Qualified"="firebrick")) +
+                             "Qualified"="orangered1", "Not Qualified"="black")) +
   coord_flip()
 ```
 
@@ -65,7 +65,7 @@ ggplot(data = oers1b,mapping = aes(x = branch, y= pct,fill = srLabel))+
   scale_y_continuous(labels=percent)+
   scale_fill_manual(values=c("Most Qualified"="springgreen3", 
                              "Highly Qualified"="lightgoldenrod", 
-                             "Qualified"="orangered1", "Not Qualified"="firebrick"))
+                             "Qualified"="orangered1", "Not Qualified"="black"))
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-7-1.png)
@@ -103,7 +103,7 @@ Log Odds (By Hand, Unweighted)
 ``` r
 unweighted_log_odds_plot <- ggplot(unweighted_log_odds_ordered, aes(order, logoddsratio, fill = branch)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
-  labs(x = NULL, y = "log_odds") +
+  labs(x = NULL, y = "Log Odds Ratio") +
   facet_wrap(~branch, ncol = 3, scales = "free") +
   theme_hc() +
   coord_flip()+
@@ -114,7 +114,7 @@ unweighted_log_odds_plot <- ggplot(unweighted_log_odds_ordered, aes(order, logod
     labels = paste0(unweighted_log_odds_ordered$srNarrativeWords),
     expand = c(0,0)
   ) +
-  ggtitle("Unweighted Log-Odds Ratio By Branch")
+  ggtitle("Log-Odds Ratio By Branch")
 
 unweighted_log_odds_plot
 ```
@@ -155,7 +155,7 @@ unweighted_log_odds_bigrams_ordered_plot_combat <-
   unweighted_log_odds_bigrams_ordered_combat %>% 
   ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
-  labs(x = NULL, y = "log_odds") +
+  labs(x = NULL, y = "Log Odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
   theme_hc() +
   coord_flip()+
@@ -167,13 +167,13 @@ unweighted_log_odds_bigrams_ordered_plot_combat <-
   ) +
   scale_fill_manual(values=c("Most Qualified"="springgreen3", 
                              "Highly Qualified"="lightgoldenrod")) +
-  ggtitle("Unweighted Log-Odds Ratio Combat Arms for Bigrams")
+  ggtitle("Log-Odds Ratio on Maneuver Branches")
 
 unweighted_log_odds_bigrams_ordered_plot_logistics <- 
   unweighted_log_odds_bigrams_ordered_logistics %>% 
   ggplot(aes(order, logoddsratio, fill = srLabel)) +
   geom_bar(stat = 'identity', show.legend = FALSE) +
-  labs(x = NULL, y = "log_odds") +
+  labs(x = NULL, y = "Log Odds") +
   facet_wrap(~srLabel, ncol = 2, scales = "free") +
   theme_hc() +
   coord_flip()+
@@ -185,7 +185,7 @@ unweighted_log_odds_bigrams_ordered_plot_logistics <-
   ) +
   scale_fill_manual(values=c("Most Qualified"="springgreen3", 
                              "Highly Qualified"="lightgoldenrod")) +
-  ggtitle("Unweighted Log-Odds Ratio Logistics for Bigrams")
+  ggtitle("Log-Odds Ratio on Logistics Branches")
 ```
 
 ``` r
@@ -210,7 +210,7 @@ Percentage of Occurrences
 -------------------------
 
 ``` r
-grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, ncol = 2)
+grid.arrange(combat_mq_bigram_plot, combat_hq_bigram_plot, logistics_mq_bigram_plot, logistics_hq_bigram_plot, nrow = 1)
 ```
 
 ![](OER_Plots_files/figure-markdown_github/unnamed-chunk-21-1.png)
@@ -260,6 +260,7 @@ par(mfrow=c(1, 2))
 clp_mq_maneuver <- cluster_optimal(bigram_graph_maneuver_mq)
 V(bigram_graph_maneuver_mq)$community <- clp_mq_maneuver$membership
 E(bigram_graph_maneuver_mq)$width <- E(bigram_graph_maneuver_mq)$n/300
+#V(bigram_graph_maneuver_mq)$size <- V(bigram_graph_maneuver_mq)$n
 
 mq_clusters_maneuver <- plot(bigram_graph_maneuver_mq, layout = layout_with_fr,
                              edge.arrow.size = 0.2,

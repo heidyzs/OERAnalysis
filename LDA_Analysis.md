@@ -241,7 +241,7 @@ LDA Using Bigrams in MQ and HQ Narratives
 -----------------------------------------
 
 ``` r
-bigram_senior = oers1 %>% unnest_tokens(bigram, srNarrative, token = "ngrams", n=2)
+bigram_senior <- oers1 %>% unnest_tokens(bigram, srNarrative, token = "ngrams", n=2)
 bigram_separated <- bigram_senior %>% separate(bigram, c("word1", "word2"), sep = " ")
 bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word1),] 
 bigram_separated <- bigram_separated[!grepl(".*xx.*", bigram_separated$word2),]
@@ -260,8 +260,9 @@ bigram_filter <- bigram_separated %>%
 Create a document term matrix, filterd to keep only top qualified OERs.
 
 ``` r
-top_qualified = c("Most Qualified", "Highly Qualified")
+top_qualified <- c("Most Qualified", "Highly Qualified")
 tidy_bigrams <- bigram_filter %>% 
+  filter(branch %in% combat_arms) %>% 
   unite(bigram, word1, word2, sep = " ") %>% 
   count(srLabel, bigram, sort = TRUE)
 tidy_bigrams$srLabel <- as.character(tidy_bigrams$srLabel)
@@ -276,17 +277,49 @@ We want to look at `beta` once again, which is the probability that the bigram i
 ``` r
 oer_bigram_topics <- tidy(bigram_lda, matrix = "beta")
 
+topic.labs <- c("Topic 1", "Topic 2")
+names(topic.labs) <- c("1", "2")
+
 oer_bigram_topics %>% group_by(topic) %>% top_n(10, beta) %>% 
   ungroup() %>% arrange(topic, - beta) %>% 
   mutate(term = reorder_within(term, beta, topic)) %>% 
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~topic, scales = "free") +
+  facet_wrap(~topic, labeller = labeller(topic = topic.labs), scales = "free") +
+  theme_hc() +
   coord_flip() +
-  scale_x_reordered()
+  scale_x_reordered() +
+  labs(x = NULL, y = "beta")
 ```
 
 ![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-15-1.png)
+
+``` r
+beta_spread <- oer_bigram_topics %>% mutate(topic = paste0("topic", topic)) %>% 
+  spread(topic, beta) %>% 
+  filter(topic1 > 0.001 | topic2 >0.001) %>% 
+  mutate(log_ratio = log2(topic2 / topic1))
+
+beta_spread_ordered <- beta_spread %>% mutate(abs = abs(log_ratio)) %>% 
+  arrange(desc(abs)) %>% top_n(20) %>% arrange((log_ratio)) %>% 
+  mutate(order = row_number())
+
+beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
+  geom_bar(stat = 'identity', show.legend = FALSE, fill = "cadetblue3") +
+  theme_hc() +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(x = NULL, y = "Log2 Ratio of Beta in Topic 2/Topic1") +
+  scale_colour_hc()+
+  scale_fill_hc() +
+  scale_x_continuous(
+    breaks = beta_spread_ordered$order,
+    labels = paste0(beta_spread_ordered$term),
+    expand = c(0,0)
+  )
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-16-1.png)
 
 LDA by Narrative Using Bigrams
 ------------------------------
@@ -371,7 +404,7 @@ Get a count of total number of MQ and HQ narratives falling in either topic 1 or
 
 ``` r
 narrative_bigram_topics <- narrative_bigram_classifications %>% count(label, topic) %>% 
-  group_by(label) %>% top_n(1, n) %>% 
+  group_by(label) %>% arrange(n) %>% top_n(1, n) %>% 
   ungroup() %>% 
   transmute(consensus = label, topic) #used to determine which topic represents which classification
 narrative_bigram_topics
@@ -380,8 +413,8 @@ narrative_bigram_topics
     ## # A tibble: 2 x 2
     ##   consensus        topic
     ##   <chr>            <int>
-    ## 1 Highly Qualified     1
-    ## 2 Most Qualified       2
+    ## 1 Most Qualified       2
+    ## 2 Highly Qualified     1
 
 See how well we were able to cluster topics by checking the classifications.
 
@@ -401,7 +434,7 @@ incorrect
     ## 1 Highly Qualified Most Qualified    5758
     ## 2 Most Qualified   Highly Qualified  4275
 
-The model incorrecty put 5758 HQ narratives into MQ bin, put 4275 MQ narratives into HQ bin
+The model incorrecty put 5993 HQ narratives into MQ bin, put 4584 MQ narratives into HQ bin
 
 ``` r
 correct <- check_classifications %>% filter(label == consensus) %>% count(label, consensus)
@@ -414,7 +447,7 @@ correct
     ## 1 Highly Qualified Highly Qualified  5993
     ## 2 Most Qualified   Most Qualified    4584
 
-The model correctly put 5993 HQ into the HQ bin and 4584 MQ into the MQ bin.
+The model correctly put 5758 HQ into the HQ bin and 4275 MQ into the MQ bin.
 
 Now we can build a confusion matrix and analyze how well the model performed.
 
@@ -452,9 +485,11 @@ confusionMatrix(check_classifications$consensus, check_classifications$label)
 
 Model had a 51% accuracy, and a 51% sensitivity, and a 51% specificity.
 
+Plot shows a breakdown of how the model predicted as either being MQ or HQ.
+
 ``` r
 grid.arrange(
-correct %>% mutate(srLabel = "srLabel") %>% 
+check_classifications %>% count(label) %>% mutate(srLabel = "Actual Distribution") %>% 
   mutate(pct = n/sum(n)) %>% 
   ggplot(aes(x = srLabel, y= pct, fill = label)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
@@ -464,25 +499,27 @@ correct %>% mutate(srLabel = "srLabel") %>%
   scale_colour_hc()+
   scale_fill_hc()+
   #xlab("Predicted")+
-  ylab("Actual Percentage")+
-  labs(x = NULL, fill = "")+
+  #ylab("Percentage")+
+  labs(x = NULL, y = NULL, fill = "")+
   #ggtitle("Distribution of OERS in 2017") + 
   scale_y_continuous(labels=percent) +
   scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
   coord_flip(),
 
-incorrect %>% mutate(srLabel = "srLabel") %>% 
+check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Prediction") %>% 
   mutate(pct = n/sum(n)) %>% 
   ggplot(aes(x = srLabel, y= pct, fill = consensus)) +
   geom_bar(stat = "identity") +
-  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+  geom_text_repel(aes(label = scales::percent(pct, accuracy = 0.1)), position = "stack",
                   size = 4.25, hjust = 1.25, vjust = 1) +
+  #geom_text_repel(aes(label = paste(as.character(signif(100*pct, 3))) + "%"), position = "stack",
+                  #size = 4.25, hjust = 1.25, vjust = 1) +
   theme_hc() +
   scale_colour_hc()+
   scale_fill_hc()+
   #xlab("Predicted")+
-  ylab("Percentage Predicted")+
-  labs(x = NULL, fill = "")+
+  #ylab("Percentage Predicted")+
+  labs(x = NULL, y = NULL, fill = "")+
   #ggtitle("Distribution of OERS in 2017") + 
   scale_y_continuous(labels=percent) +
   scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
@@ -490,7 +527,7 @@ incorrect %>% mutate(srLabel = "srLabel") %>%
 nrow = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 See how well we were able to cluster, based on individual words
 
@@ -581,4 +618,4 @@ grid.arrange(
   ncol = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-25-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-26-1.png)
