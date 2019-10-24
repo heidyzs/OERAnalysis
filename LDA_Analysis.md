@@ -34,6 +34,32 @@ oer_topics %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>% arrange(top
 
 ![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
+``` r
+beta_spread <- oer_topics %>% mutate(topic = paste0("topic", topic)) %>% 
+  spread(topic, beta) %>% 
+  filter(topic1 > 0.001 | topic2 >0.001) %>% 
+  mutate(log_ratio = log2(topic2 / topic1))
+
+beta_spread_ordered <- beta_spread %>% mutate(abs = abs(log_ratio)) %>% 
+  arrange(desc(abs)) %>% top_n(30) %>% arrange((log_ratio)) %>% 
+  mutate(order = row_number())
+
+beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
+  geom_bar(stat = 'identity', show.legend = FALSE, fill = "cadetblue3") +
+  theme_hc() +
+  coord_flip() +
+  labs(x = NULL, y = "Log2 Ratio of Beta in Topic 2/Topic1") +
+  scale_colour_hc()+
+  scale_fill_hc() +
+  scale_x_continuous(
+    breaks = beta_spread_ordered$order,
+    labels = paste0(beta_spread_ordered$term),
+    expand = c(0,0)
+  )
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
 LDA by Narrative
 ----------------
 
@@ -246,7 +272,7 @@ check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Predictio
 nrow = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-12-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
 Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics. We use `augment` to see what words were classified into each topic that contributed to the document being assigned to its respective topic.
 
@@ -317,7 +343,7 @@ grid.arrange(
   ncol = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-14-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 LDA Using Bigrams in MQ and HQ Narratives
 -----------------------------------------
@@ -374,7 +400,7 @@ oer_bigram_topics %>% group_by(topic) %>% top_n(10, beta) %>%
   labs(x = NULL, y = "beta")
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 ``` r
 beta_spread <- oer_bigram_topics %>% mutate(topic = paste0("topic", topic)) %>% 
@@ -390,7 +416,6 @@ beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
   geom_bar(stat = 'identity', show.legend = FALSE, fill = "cadetblue3") +
   theme_hc() +
   coord_flip() +
-  scale_x_reordered() +
   labs(x = NULL, y = "Log2 Ratio of Beta in Topic 2/Topic1") +
   scale_colour_hc()+
   scale_fill_hc() +
@@ -401,7 +426,7 @@ beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
   )
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 LDA by Narrative Using Bigrams
 ------------------------------
@@ -609,7 +634,7 @@ check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Predictio
 nrow = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-26-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-27-1.png)
 
 See how well we were able to cluster, based on individual words
 
@@ -700,4 +725,4 @@ grid.arrange(
   ncol = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-28-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-29-1.png)

@@ -82,6 +82,32 @@ oer_topics %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>% arrange(top
   scale_x_reordered()
 ```
 
+
+
+```{r, fig.width = 12}
+beta_spread <- oer_topics %>% mutate(topic = paste0("topic", topic)) %>% 
+  spread(topic, beta) %>% 
+  filter(topic1 > 0.001 | topic2 >0.001) %>% 
+  mutate(log_ratio = log2(topic2 / topic1))
+
+beta_spread_ordered <- beta_spread %>% mutate(abs = abs(log_ratio)) %>% 
+  arrange(desc(abs)) %>% top_n(30) %>% arrange((log_ratio)) %>% 
+  mutate(order = row_number())
+
+beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
+  geom_bar(stat = 'identity', show.legend = FALSE, fill = "cadetblue3") +
+  theme_hc() +
+  coord_flip() +
+  labs(x = NULL, y = "Log2 Ratio of Beta in Topic 2/Topic1") +
+  scale_colour_hc()+
+  scale_fill_hc() +
+  scale_x_continuous(
+    breaks = beta_spread_ordered$order,
+    labels = paste0(beta_spread_ordered$term),
+    expand = c(0,0)
+  )
+```
+
 ## LDA by Narrative
 We want to see how well LDA was able to classify each narrative by its topics. 
 
@@ -325,7 +351,6 @@ beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
   geom_bar(stat = 'identity', show.legend = FALSE, fill = "cadetblue3") +
   theme_hc() +
   coord_flip() +
-  scale_x_reordered() +
   labs(x = NULL, y = "Log2 Ratio of Beta in Topic 2/Topic1") +
   scale_colour_hc()+
   scale_fill_hc() +
