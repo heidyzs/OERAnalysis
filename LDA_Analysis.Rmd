@@ -144,6 +144,8 @@ Now we want to see how well were able to cluster by topics. Create `check_classi
 ```{r}
 check_classifications <- narrative_classifications %>% 
   inner_join(narrative_topics, by = c("topic" = "topic"))
+check_classifications$label <- as.factor(check_classifications$label)
+check_classifications$consensus <- as.factor(check_classifications$consensus)
 check_classifications %>% 
   filter(label != consensus) %>% count(label, consensus) 
 ```
@@ -155,6 +157,53 @@ check_classifications %>%
   count(label, consensus) 
 ```
 We correctly put 6256 HQ narratives into the HQ bin and 5079 MQ narratives into the MQ bin.
+
+Build a confusion matrix to see additional statistics.
+```{r}
+confusionMatrix(check_classifications$consensus, check_classifications$label)
+```
+The model has a 54% accuracy, 53% sensitivity, and 57% specificity.
+
+The plot shows the breakdown of how the model predicted as either MQ or HQ as compared to the original/baseline distribution of MQ and HQ narratives.
+```{r, fig.width = 14}
+grid.arrange(
+check_classifications %>% count(label) %>% mutate(srLabel = "Actual Distribution") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = label)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  #ylab("Percentage")+
+  labs(x = NULL, y = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+
+check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Prediction") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = consensus)) +
+  geom_bar(stat = "identity") +
+  geom_text_repel(aes(label = scales::percent(pct, accuracy = 0.1)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  #geom_text_repel(aes(label = paste(as.character(signif(100*pct, 3))) + "%"), position = "stack",
+                  #size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  #ylab("Percentage Predicted")+
+  labs(x = NULL, y = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+nrow = 2)
+```
 
 Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics. We use `augment` to see what words were classified into each topic that contributed to the document being assigned to its respective topic. 
 ```{r}
@@ -355,12 +404,12 @@ incorrect <- check_classifications %>% filter(label != consensus) %>% count(labe
 incorrect
 ```
 
-The model incorrecty put 5993 HQ narratives into MQ bin, put 4584 MQ narratives into HQ bin
+The model incorrecty put 5758 HQ narratives into MQ bin, put 4275 MQ narratives into HQ bin
 ```{r}
 correct <- check_classifications %>% filter(label == consensus) %>% count(label, consensus)
 correct
 ```
-The model correctly put 5758 HQ into the HQ bin and 4275 MQ into the MQ bin.
+The model correctly put 5993 HQ into the HQ bin and 4584 MQ into the MQ bin.
 
 Now we can build a confusion matrix and analyze how well the model performed.
 ```{r}

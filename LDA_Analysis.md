@@ -140,13 +140,15 @@ Now we want to see how well were able to cluster by topics. Create `check_classi
 ``` r
 check_classifications <- narrative_classifications %>% 
   inner_join(narrative_topics, by = c("topic" = "topic"))
+check_classifications$label <- as.factor(check_classifications$label)
+check_classifications$consensus <- as.factor(check_classifications$consensus)
 check_classifications %>% 
   filter(label != consensus) %>% count(label, consensus) 
 ```
 
     ## # A tibble: 2 x 3
     ##   label            consensus            n
-    ##   <chr>            <chr>            <int>
+    ##   <fct>            <fct>            <int>
     ## 1 Highly Qualified Most Qualified    5506
     ## 2 Most Qualified   Highly Qualified  3785
 
@@ -160,11 +162,91 @@ check_classifications %>%
 
     ## # A tibble: 2 x 3
     ##   label            consensus            n
-    ##   <chr>            <chr>            <int>
+    ##   <fct>            <fct>            <int>
     ## 1 Highly Qualified Highly Qualified  6256
     ## 2 Most Qualified   Most Qualified    5079
 
 We correctly put 6256 HQ narratives into the HQ bin and 5079 MQ narratives into the MQ bin.
+
+Build a confusion matrix to see additional statistics.
+
+``` r
+confusionMatrix(check_classifications$consensus, check_classifications$label)
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##                   Reference
+    ## Prediction         Highly Qualified Most Qualified
+    ##   Highly Qualified             6256           3785
+    ##   Most Qualified               5506           5079
+    ##                                           
+    ##                Accuracy : 0.5495          
+    ##                  95% CI : (0.5427, 0.5564)
+    ##     No Information Rate : 0.5703          
+    ##     P-Value [Acc > NIR] : 1               
+    ##                                           
+    ##                   Kappa : 0.1024          
+    ##                                           
+    ##  Mcnemar's Test P-Value : <2e-16          
+    ##                                           
+    ##             Sensitivity : 0.5319          
+    ##             Specificity : 0.5730          
+    ##          Pos Pred Value : 0.6230          
+    ##          Neg Pred Value : 0.4798          
+    ##              Prevalence : 0.5703          
+    ##          Detection Rate : 0.3033          
+    ##    Detection Prevalence : 0.4868          
+    ##       Balanced Accuracy : 0.5524          
+    ##                                           
+    ##        'Positive' Class : Highly Qualified
+    ## 
+
+The model has a 54% accuracy, 53% sensitivity, and 57% specificity.
+
+The plot shows the breakdown of how the model predicted as either MQ or HQ as compared to the original/baseline distribution of MQ and HQ narratives.
+
+``` r
+grid.arrange(
+check_classifications %>% count(label) %>% mutate(srLabel = "Actual Distribution") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = label)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_text_repel(aes(label = scales::percent(pct)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  #ylab("Percentage")+
+  labs(x = NULL, y = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+
+check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Prediction") %>% 
+  mutate(pct = n/sum(n)) %>% 
+  ggplot(aes(x = srLabel, y= pct, fill = consensus)) +
+  geom_bar(stat = "identity") +
+  geom_text_repel(aes(label = scales::percent(pct, accuracy = 0.1)), position = "stack",
+                  size = 4.25, hjust = 1.25, vjust = 1) +
+  #geom_text_repel(aes(label = paste(as.character(signif(100*pct, 3))) + "%"), position = "stack",
+                  #size = 4.25, hjust = 1.25, vjust = 1) +
+  theme_hc() +
+  scale_colour_hc()+
+  scale_fill_hc()+
+  #xlab("Predicted")+
+  #ylab("Percentage Predicted")+
+  labs(x = NULL, y = NULL, fill = "")+
+  #ggtitle("Distribution of OERS in 2017") + 
+  scale_y_continuous(labels=percent) +
+  scale_fill_manual(values=c("Most Qualified"="springgreen3", "Highly Qualified"="lightgoldenrod")) +
+  coord_flip(),
+nrow = 2)
+```
+
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
 Now lets see how well we were able to assign topics to documents based on individal words and see what words made it difficult to assign topics. We use `augment` to see what words were classified into each topic that contributed to the document being assigned to its respective topic.
 
@@ -235,7 +317,7 @@ grid.arrange(
   ncol = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-12-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 LDA Using Bigrams in MQ and HQ Narratives
 -----------------------------------------
@@ -292,7 +374,7 @@ oer_bigram_topics %>% group_by(topic) %>% top_n(10, beta) %>%
   labs(x = NULL, y = "beta")
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-15-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 ``` r
 beta_spread <- oer_bigram_topics %>% mutate(topic = paste0("topic", topic)) %>% 
@@ -319,7 +401,7 @@ beta_spread_ordered %>% ggplot(aes(order, log_ratio)) +
   )
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-16-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 LDA by Narrative Using Bigrams
 ------------------------------
@@ -434,7 +516,7 @@ incorrect
     ## 1 Highly Qualified Most Qualified    5758
     ## 2 Most Qualified   Highly Qualified  4275
 
-The model incorrecty put 5993 HQ narratives into MQ bin, put 4584 MQ narratives into HQ bin
+The model incorrecty put 5758 HQ narratives into MQ bin, put 4275 MQ narratives into HQ bin
 
 ``` r
 correct <- check_classifications %>% filter(label == consensus) %>% count(label, consensus)
@@ -447,7 +529,7 @@ correct
     ## 1 Highly Qualified Highly Qualified  5993
     ## 2 Most Qualified   Most Qualified    4584
 
-The model correctly put 5758 HQ into the HQ bin and 4275 MQ into the MQ bin.
+The model correctly put 5993 HQ into the HQ bin and 4584 MQ into the MQ bin.
 
 Now we can build a confusion matrix and analyze how well the model performed.
 
@@ -527,7 +609,7 @@ check_classifications %>% count(consensus) %>% mutate(srLabel = "Model Predictio
 nrow = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-24-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-26-1.png)
 
 See how well we were able to cluster, based on individual words
 
@@ -618,4 +700,4 @@ grid.arrange(
   ncol = 2)
 ```
 
-![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-26-1.png)
+![](LDA_Analysis_files/figure-markdown_github/unnamed-chunk-28-1.png)
